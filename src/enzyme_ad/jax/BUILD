@@ -89,6 +89,10 @@ cc_library(
         "-Wno-unused-result",
         "-Wno-unused-variable",
     ],
+    local_defines = select({
+        ":no_nanobind": ["ENZYME_JAX_NO_NANOBIND"],
+        "//conditions:default": [],
+    }),
     deps = [
         "@enzyme//:EnzymeStatic",
         "@llvm-project//clang:ast",
@@ -110,8 +114,10 @@ cc_library(
         "@llvm-project//llvm:OrcJIT",
         "@llvm-project//llvm:Support",
         "@llvm-project//llvm:TargetParser",
-        "@nanobind",
-    ],
+    ] + select({
+        ":no_nanobind": [],
+        "//conditions:default": ["@nanobind"],
+    }),
 )
 
 py_library(
@@ -1491,6 +1497,11 @@ cc_library(
     ],
 )
 
+config_setting(
+    name = "no_nanobind",
+    values = {"define": "enzyme_jax_no_nanobind"},
+)
+
 cc_library(
     name = "compile_with_xla",
     srcs = ["compile_with_xla.cc"],
@@ -1503,8 +1514,11 @@ cc_library(
         "-Wno-unused-variable",
         "-Wno-vla-cxx-extension",
     ],
+    local_defines = select({
+        ":no_nanobind": ["ENZYME_JAX_NO_NANOBIND"],
+        "//conditions:default": [],
+    }),
     deps = [
-        "@nanobind",
         ":XLADerivatives",
         ":TransformOps",
         ":RegistryUtils",
@@ -1623,7 +1637,10 @@ cc_library(
         # Mosaic
         # Upstream is broken, re-enable when working
         # "@jax//jaxlib/mosaic:tpu_dialect",
-    ],
+    ] + select({
+        ":no_nanobind": [],
+        "//conditions:default": ["@nanobind"],
+    }),
 )
 
 pybind_extension(

@@ -70,11 +70,21 @@
 
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
+#ifdef ENZYMEJAX_NO_NANOBIND
+#include <stdexcept>
+#else
 #include "nanobind/nanobind.h"
+#endif
 // #include <Python.h>
 
 #include "Enzyme/Enzyme.h"
 #include "Enzyme/Utils.h"
+
+#ifdef ENZYMEJAX_NO_NANOBIND
+#define THROW_VALUE_ERROR(msg) throw std::runtime_error(msg)
+#else
+#define THROW_VALUE_ERROR(msg) throw nanobind::value_error(msg)
+#endif
 
 namespace clang {
 namespace driver {
@@ -553,7 +563,7 @@ struct tensor<T, n0, N...>
       llvm::orc::JITTargetMachineBuilder(llvm::Triple(mod->getTargetTriple()))
           .createTargetMachine();
   if (!ETM) {
-    throw nanobind::value_error("failed to create targetmachine");
+    THROW_VALUE_ERROR("failed to create targetmachine");
   }
   auto TM = std::move(ETM.get());
 
@@ -572,7 +582,7 @@ struct tensor<T, n0, N...>
 
   ModulePassManager MPM;
   if (Error Err = PB.parsePassPipeline(MPM, "default<O3>")) {
-    throw nanobind::value_error(
+    THROW_VALUE_ERROR(
         (Twine("failed to parse pass pipeline: ") + toString(std::move(Err)))
             .str()
             .c_str());
@@ -649,7 +659,7 @@ struct tensor<T, n0, N...>
         ss << *mod << "\n";
         ss << " unsupported value to erase:\n";
         ss << " cur: " << *cur << " prev: " << *prev << "\n";
-        throw nanobind::value_error(ss.str().c_str());
+        THROW_VALUE_ERROR(ss.str().c_str());
       }
       for (auto I : toErase) {
         I->eraseFromParent();
