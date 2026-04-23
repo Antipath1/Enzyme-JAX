@@ -1499,7 +1499,9 @@ cc_library(
 
 config_setting(
     name = "no_nanobind",
-    values = {"define": "enzyme_jax_no_nanobind"},
+    define_values = {
+        "enzyme_jax_no_nanobind": "true"
+    },
 )
 
 cc_library(
