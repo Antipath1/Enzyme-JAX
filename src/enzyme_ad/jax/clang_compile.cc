@@ -70,7 +70,7 @@
 
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
-#ifdef ENZYMEJAX_NO_NANOBIND
+#ifdef ENZYME_JAX_NO_NANOBIND
 #include <stdexcept>
 #else
 #include "nanobind/nanobind.h"
@@ -80,7 +80,7 @@
 #include "Enzyme/Enzyme.h"
 #include "Enzyme/Utils.h"
 
-#ifdef ENZYMEJAX_NO_NANOBIND
+#ifdef ENZYME_JAX_NO_NANOBIND
 #define THROW_VALUE_ERROR(msg) throw std::runtime_error(msg)
 #else
 #define THROW_VALUE_ERROR(msg) throw nanobind::value_error(msg)

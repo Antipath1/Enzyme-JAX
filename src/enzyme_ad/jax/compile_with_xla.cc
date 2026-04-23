@@ -26,7 +26,7 @@
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Parser/Parser.h"
 #include "mlir/Pass/PassManager.h"
-#ifdef ENZYMEJAX_NO_NANOBIND
+#ifdef ENZYME_JAX_NO_NANOBIND
 #include <stdexcept>
 #else
 #include "nanobind/nanobind.h"
@@ -55,7 +55,7 @@
 #include "RegistryUtils.h"
 // macro to throw value error, not using nanobind if true, therefore use std::runtime_error.
 // std::runtime_error Used as nanobind does not work for Julia
-#ifdef ENZYMEJAX_NO_NANOBIND
+#ifdef ENZYME_JAX_NO_NANOBIND
 #define THROW_VALUE_ERROR(msg) throw std::runtime_error(msg)
 #else
 #define THROW_VALUE_ERROR(msg) throw nanobind::value_error(msg)
