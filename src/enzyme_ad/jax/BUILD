@@ -110,7 +110,6 @@ cc_library(
         "@llvm-project//llvm:OrcJIT",
         "@llvm-project//llvm:Support",
         "@llvm-project//llvm:TargetParser",
-        "@nanobind",
     ],
 )
 
@@ -1491,6 +1490,7 @@ cc_library(
     ],
 )
 
+
 cc_library(
     name = "compile_with_xla",
     srcs = ["compile_with_xla.cc"],
@@ -1504,7 +1504,6 @@ cc_library(
         "-Wno-vla-cxx-extension",
     ],
     deps = [
-        "@nanobind",
         ":XLADerivatives",
         ":TransformOps",
         ":RegistryUtils",

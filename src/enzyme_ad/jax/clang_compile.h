@@ -12,7 +12,9 @@
 #include "llvm/IR/Module.h"
 #include <string>
 
-std::unique_ptr<llvm::Module>
+#include "absl/status/statusor.h"
+
+absl::StatusOr<std::unique_ptr<llvm::Module>>
 GetLLVMFromJob(std::string filename, std::string filecontents, bool cpp,
                llvm::ArrayRef<std::string> pyargv,
                llvm::LLVMContext *ctx = nullptr,

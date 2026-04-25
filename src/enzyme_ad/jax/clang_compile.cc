@@ -70,11 +70,13 @@
 
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
-#include "nanobind/nanobind.h"
 // #include <Python.h>
 
 #include "Enzyme/Enzyme.h"
 #include "Enzyme/Utils.h"
+
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 
 namespace clang {
 namespace driver {
@@ -166,7 +168,7 @@ static TargetMachine *GetTargetMachine(llvm::Triple TheTriple, StringRef CPUStr,
       codegen::getExplicitRelocModel(), codegen::getExplicitCodeModel(), level);
 }
 
-std::unique_ptr<llvm::Module>
+absl::StatusOr<std::unique_ptr<llvm::Module>>
 GetLLVMFromJob(std::string filename, std::string filecontents, bool cpp,
                ArrayRef<std::string> pyargv, LLVMContext *Context,
                std::unique_ptr<llvm::Module> linkMod) {
@@ -494,8 +496,7 @@ struct tensor<T, n0, N...>
   // Create the actual diagnostics engine.
   Clang->setDiagnostics(Clang->createDiagnostics(*fuseFS, DiagOpts));
   if (!Clang->hasDiagnostics()) {
-    llvm::errs() << " failed create diag\n";
-    return {};
+    return absl::InternalError("Failed to create diagnostics engine in Clang compiler");
   }
 
   // Set an error handler, so that any LLVM backend diagnostics go through our
@@ -505,16 +506,14 @@ struct tensor<T, n0, N...>
 
   DiagsBuffer->FlushDiagnostics(Clang->getDiagnostics());
   if (!Success) {
-    llvm::errs() << " failed diag\n";
-    return {};
+    return absl::InternalError("Failed to initialize Clang CompilerInvocation from args");
   }
 
   assert(Context);
   auto Act = std::make_unique<EmitLLVMOnlyAction>(Context);
   Success = Clang->ExecuteAction(*Act);
   if (!Success) {
-    llvm::errs() << " failed execute\n";
-    return {};
+    return absl::InternalError("Failed to execute Clang EmitLLVMOnlyAction");
   }
 
   auto mod = Act->takeModule();
@@ -553,7 +552,7 @@ struct tensor<T, n0, N...>
       llvm::orc::JITTargetMachineBuilder(llvm::Triple(mod->getTargetTriple()))
           .createTargetMachine();
   if (!ETM) {
-    throw nanobind::value_error("failed to create targetmachine");
+    return absl::InternalError("Failed to create JIT TargetMachine");
   }
   auto TM = std::move(ETM.get());
 
@@ -572,10 +571,9 @@ struct tensor<T, n0, N...>
 
   ModulePassManager MPM;
   if (Error Err = PB.parsePassPipeline(MPM, "default<O3>")) {
-    throw nanobind::value_error(
+    return absl::InvalidArgumentError(
         (Twine("failed to parse pass pipeline: ") + toString(std::move(Err)))
-            .str()
-            .c_str());
+            .str());
   }
   MPM.run(*mod, MAM);
 
@@ -649,7 +647,7 @@ struct tensor<T, n0, N...>
         ss << *mod << "\n";
         ss << " unsupported value to erase:\n";
         ss << " cur: " << *cur << " prev: " << *prev << "\n";
-        throw nanobind::value_error(ss.str().c_str());
+        return absl::InternalError(err_str);
       }
       for (auto I : toErase) {
         I->eraseFromParent();
@@ -657,5 +655,5 @@ struct tensor<T, n0, N...>
     }
   }
 
-  return mod;
+  return std::move(mod);
 }

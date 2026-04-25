@@ -138,8 +138,12 @@ public:
       break;
 
     case Language::MHLO: {
-      local_executable = compile_mhlo_to_llvm_with_xla(
+      auto exec_or_err = compile_mhlo_to_llvm_with_xla(
           source, stringbuf, xla_runtime, pass_pipeline);
+      if (!exec_or_err.ok()) {
+        throw nanobind::value_error(exec_or_err.status().ToString().c_str());
+      }
+      local_executable = std::move(exec_or_err).value();
       auto *cpu_executable = static_cast<xla::cpu::CpuExecutable *>(
           local_executable->executable());
       auto &assignment = cpu_executable->buffer_assignment();
@@ -898,8 +902,12 @@ public:
     switch (lang) {
     case Language::MHLO: {
       std::string llvm_ir;
-      auto local_executable = compile_mhlo_to_llvm_with_xla(
+      auto exec_or_err = compile_mhlo_to_llvm_with_xla(
           source, llvm_ir, xla_runtime, pass_pipeline);
+      if (!exec_or_err.ok()) {
+        throw nanobind::value_error(exec_or_err.status().ToString().c_str());
+      }
+      auto local_executable = std::move(exec_or_err).value();
       auto *cpu_executable = static_cast<xla::cpu::CpuExecutable *>(
           local_executable->executable());
       auto &assignment = cpu_executable->buffer_assignment();
@@ -1273,14 +1281,17 @@ NB_MODULE(enzyme_call, m) {
 
   m.def("register_enzymexla_xla_ffi", []() { registerEnzymeJaXXLAFFI(); });
 
-  m.def("compile_mhlo_to_llvm_with_xla",
-        [](const std::string &mhlo_text, bool xla_runtime,
-           const std::string &pass_pipeline) {
-          std::string llvm_ir;
-          compile_mhlo_to_llvm_with_xla(mhlo_text, llvm_ir, xla_runtime,
-                                        pass_pipeline);
-          return llvm_ir;
-        });
+  m.def("compile_mhlo_to_llvm_with_xla", [](const std::string &mhlo_text,
+                                            bool xla_runtime,
+                                            const std::string &pass_pipeline) {
+    std::string llvm_ir;
+    auto exec_or_err = compile_mhlo_to_llvm_with_xla(
+        mhlo_text, llvm_ir, xla_runtime, pass_pipeline);
+    if (!exec_or_err.ok()) {
+      throw nanobind::value_error(exec_or_err.status().ToString().c_str());
+    }
+    return llvm_ir;
+  });
 
   m.def("get_transform_passes_list",
         [](int64_t max_constant_threshold, int64_t while_unroll_threshold,
