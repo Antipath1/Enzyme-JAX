@@ -20,5 +20,5 @@ namespace mlir {
 class Operation;
 }
 
-absl::StatusOr<std::pair<std::string, std::string>>
-run_pass_pipeline(mlir::Operation *mod, const std::string &pass_pipeline);
+absl::Status run_pass_pipeline(mlir::Operation *mod,
+                               const std::string &pass_pipeline);
