@@ -9,10 +9,25 @@
 #ifndef ENZYME_JAX_CLANG_COMPILE_H
 #define ENZYME_JAX_CLANG_COMPILE_H
 
-#include "llvm/IR/Module.h"
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <tuple>
+#include <vector>
+
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/IR/Module.h"
 
 #include "absl/status/statusor.h"
+
+namespace llvm {
+class LLVMContext;
+}
+enum class ABI { Primal, Forward, Augmented, Reverse, Tape };
+enum class Language : int { CPP = 0, LLVM = 1, MHLO = 2 };
 
 absl::StatusOr<std::unique_ptr<llvm::Module>>
 GetLLVMFromJob(std::string filename, std::string filecontents, bool cpp,
@@ -20,4 +35,14 @@ GetLLVMFromJob(std::string filename, std::string filecontents, bool cpp,
                llvm::LLVMContext *ctx = nullptr,
                std::unique_ptr<llvm::Module> linkMod = nullptr);
 
+absl::StatusOr<std::tuple<std::unique_ptr<llvm::Module>,
+                          std::unique_ptr<llvm::LLVMContext>, size_t, size_t>>
+createLLVMMod(std::string fn, llvm::StringRef source,
+              llvm::ArrayRef<llvm::SmallVector<int64_t>> out_shapes,
+              llvm::ArrayRef<std::string> out_names,
+              llvm::ArrayRef<llvm::SmallVector<int64_t>> in_shapes,
+              llvm::ArrayRef<std::string> in_names,
+              const std::vector<std::string> &pyargv_strs, ABI mode,
+              Language lang, bool xla_runtime,
+              const std::string &pass_pipeline);
 #endif // ENZYME_JAX_CLANG_COMPILE_H

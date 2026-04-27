@@ -110,6 +110,14 @@ cc_library(
         "@llvm-project//llvm:OrcJIT",
         "@llvm-project//llvm:Support",
         "@llvm-project//llvm:TargetParser",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+
+        "@xla//xla/hlo/ir:hlo",
+        "@xla//xla/service/cpu:cpu_executable",
+        "@xla//xla/client:local_client",
+
+        ":compile_with_xla",
     ],
 )
 
