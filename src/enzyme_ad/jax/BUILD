@@ -110,7 +110,6 @@ cc_library(
         "@llvm-project//llvm:OrcJIT",
         "@llvm-project//llvm:Support",
         "@llvm-project//llvm:TargetParser",
-        "@nanobind",
 
         "@xla//xla/hlo/ir:hlo",
         "@xla//xla/service/cpu:cpu_executable",
@@ -1510,7 +1509,6 @@ cc_library(
         "-Wno-vla-cxx-extension",
     ],
     deps = [
-        "@nanobind",
         ":XLADerivatives",
         ":TransformOps",
         ":RegistryUtils",
