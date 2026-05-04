@@ -757,15 +757,44 @@ createLLVMMod(std::string fn, llvm::StringRef source,
   }
   case ::Language::LLVM:
     llvm::SMDiagnostic Err;
-    linkMod =
-        llvm::parseIR(llvm::MemoryBufferRef(source, "<input>"), Err, *llvm_ctx);
-    if (!linkMod) {
-      std::string err_str;
-      llvm::raw_string_ostream ss(err_str);
-      Err.print("llvmsource", ss, false);
-      return absl::InternalError(("failed to compile LLVM: " + ss.str()));
+    std::string src = source.str();
+    std::vector<std::string> module_chunks;
+
+    std::string delimiter = "; ModuleID = ";
+    size_t pos = 0;
+    while ((pos = src.find(delimiter, pos)) != std::string::npos) {
+      size_t next_pos = src.find(delimiter, pos + 1);
+      module_chunks.push_back(src.substr(pos, next_pos - pos));
+      pos = next_pos;
     }
-    assert(linkMod);
+
+    if (module_chunks.empty()) {
+      module_chunks.push_back(src);
+    }
+
+    linkMod = nullptr;
+
+    for (const std::string &chunk : module_chunks) {
+      auto tempMod = llvm::parseIR(llvm::MemoryBufferRef(chunk, "<input>"), Err,
+                                   *llvm_ctx);
+      if (!tempMod) {
+        std::string err_str;
+        llvm::raw_string_ostream ss(err_str);
+        Err.print("llvmsource", ss, false);
+        return absl::InternalError(("failed to compile LLVM: " + ss.str()));
+      }
+      if (!linkMod) {
+        linkMod = std::move(tempMod);
+      } else {
+        bool link_err = llvm::Linker::linkModules(*linkMod, std::move(tempMod));
+        if (link_err) {
+          return absl::InternalError(
+              "failed to link XLA's LLVM modules together");
+        }
+      }
+    }
+    assert(linkMod &&
+           "Failed to generate a valid LLVM module from the input source");
     if (lang == ::Language::MHLO) {
       auto *cpu_executable = static_cast<xla::cpu::CpuExecutable *>(
           local_executable->executable());
